@@ -1,0 +1,7 @@
+- vòng tròn màu trắng là số lượng < MAX/2
+- vòng tròn màu xanh dương là số lượng > MAX/2
+- vòng tròn xanh lá là full
+- node màu vàng là bình thương
+- node màu đỏ là mới thêm vô khách hàng x đang chỗ này
+- node màu tính là vị trí khách hàng đang được xét thêm khách hàng mới vô (khách hàng x hoặc khách hàng có trị tuyệt đối 2 energy lớn nhất)
+- phần test 8 có hàng đợi với node tím là con trỏ đang trỏ tới node cuối danh sách
