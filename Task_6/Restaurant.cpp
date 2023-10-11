@@ -24,6 +24,7 @@ private:
 		for(int i = 0; i < sizeCustomerQueue + sizeCustomerInDesk; i++)
 		{
 			//TODO: tìm điều kiện break;
+			if(customerTimeDelete -> inDisk == true) break;
 			customerTimeDelete = customerTimeDelete->next;
 		}
 
@@ -32,28 +33,35 @@ private:
 		if(sizeCustomerQueue + sizeCustomerInDesk == 1)
 		{
 			//TODO: cập nhật CustomerTimeHead, CustomerTimeTail gán về nullptr xóa danh sách liên kết đôi
+			CustomerTimeHead = CustomerTimeTail = nullptr;
 		}
 		//* TH khách danh sách customerTime đang xóa khách hàng là khách đầu tiên
 		else if(customerTimeDelete == CustomerTimeHead)
 		{
 			//TODO: cập nhật CustomerTimeHead và prev của node trước đó xóa danh sách liên kết đôi
+			customerTimeDelete -> next -> prev = nullptr;
+			CustomerTimeHead = CustomerTimeHead -> next;
 		}
 		//* TH khách danh sách customerTime đang xóa là khách hàng cuối cùng
 		else if(customerTimeDelete == CustomerTimeTail)
 		{
 			//TODO: cập nhật CustomerTimeTail và next của node sau đó xóa danh sách liên kết đôi
+			customerTimeDelete -> prev -> next = nullptr;
+			CustomerTimeTail = CustomerTimeTail -> prev;
 		}
 		//* TH khách danh sách customerTime đang xóa là khách hàng giữa
 		else
 		{
 			//TODO: cập nhật node trước và sau của node cần xóa danh sách liên kết đôi
+			customerTimeDelete -> next -> prev = customerTimeDelete -> prev;
+			customerTimeDelete -> prev -> next = customerTimeDelete -> next;
 		}
 
 		return customerTimeDelete;	
 	}
 
 	//! xóa khách hàng customerTimeDelete
-	void delteCustomerTime(customerTime* customerTimeDelete)
+	void deleteCustomerTime(customerTime* customerTimeDelete)
 	{
 		//* khách trong bàn
 		if(customerTimeDelete->inDisk == true)
@@ -69,16 +77,19 @@ private:
 			{
 				customer* customerDelete = customerTimeDelete->data;
 				//TODO cập nhật tại khách hàng phía trước và khách hàng phía sau
-
+				customerDelete -> next -> prev = customerDelete -> prev;
+				customerDelete -> prev -> next = customerDelete -> next;
 
 				//* cập nhật lại khách hàng x thầy mô tả trong thread khi đang xóa khách hàng trong bàn
 				if(customerDelete->energy > 0)
 				{
 					//TODO code you
+					customerX = customerDelete -> next;
 				}
 				else
 				{
 					//TODO code you
+					customerX = customerDelete -> prev;
 				}
 				sizeCustomerInDesk--; //! cập nhật size trong bàn
 			}
@@ -96,9 +107,9 @@ private:
 			else
 			{
 				customer* customerDelete = customerTimeDelete->data;
-
 				//TODO cập nhật tại khách hàng phía trước và khách hàng phía sau
-
+				customerDelete -> next -> prev = customerDelete -> prev;
+				customerDelete -> prev -> next = customerDelete -> next;
 
 				//* cập nhật lại khách hàng đầu tiên khi khách hàng đầu tiên trong hàng chờ bị xóa
 				if(customerDelete == customerQueue) customerQueue = customerQueue->next;
@@ -123,7 +134,7 @@ private:
 			for(int i = 0; i < sizeCustomerQueue + sizeCustomerInDesk; i++)
 			{
 				//TODO: cập nhật inDisk, bằng cách so sánh data với customerQueue
-
+				if(temp -> data == newCustomer) temp -> inDisk = true; 
 				temp = temp->next;
 			}
 			//* Bước 1.2 xóa khách hàng trong hàng chờ 
@@ -131,8 +142,13 @@ private:
 			else
 			{
 				//TODO xóa khách hàng trong hàng chờ là khách hàng đầu tiên trong customerQueue
+				newCustomer -> next -> prev = newCustomer -> prev;
+				newCustomer -> prev -> next = newCustomer -> next;
 				//TODO: cập nhật customerQueue, prev node trước ủa customerQueue và next node sau customerQueue
-				
+				customerQueue -> next -> prev = customerQueue -> prev;
+				customerQueue -> prev -> next = customerQueue -> next;
+				customerQueue = customerQueue -> next;
+
 			}
 			sizeCustomerQueue --;
 
@@ -148,21 +164,41 @@ private:
 				if(sizeCustomerInDesk >= MAXSIZE / 2)
 				{
 					//TODO CODE YOU task 1 bước 6
+					customer* temp;
+					temp = customerX;
+					int max = 0;
+					for(int i = 0; i < sizeCustomerInDesk; i++){
+						int RES = abs(newCustomer -> energy - temp -> energy);
+						if(max < RES){
+							max = RES;
+							customerX = temp;
+						}
+						temp = temp -> next;
+					}
 				}
 				//* thêm khách hàng mới vào phía trước khác hàng X
 				if(newCustomer->energy >= customerX->energy)
 				{
 					//TODO CODE YOU task 1 bước 7
+					newCustomer -> prev = customerX;
+					newCustomer -> next = customerX -> next;
+					customerX -> next -> prev = newCustomer;
+					customerX -> next = newCustomer;
 				}
 				//*thêm khách hàng mới vào phía sau khác hàng X
 				else
 				{
 					//TODO CODE YOU task 1 bước 7
+					newCustomer -> next = customerX;
+					newCustomer -> prev = customerX -> prev;
+					customerX -> prev -> next = newCustomer;
+					customerX -> prev = newCustomer;
 				}
 			}
 			customerX = newCustomer;
 			sizeCustomerInDesk ++;	
-		}	
+		}
+		return;
 	}
 
 	//! print ra khách hàng đến gần nhất đến lâu nhất trong bàn
@@ -178,6 +214,29 @@ private:
 	void swap(customer* head, customer * tail)
 	{
 		//TODO code your
+		customer* temp = new customer();
+
+		head -> next -> prev = temp;
+		head -> prev -> next = temp;
+		temp -> next = head -> next;
+		temp -> prev = head -> prev;
+		head -> next = head -> prev = nullptr;
+
+		//TODO : đổi head với tail
+		head -> next = tail -> next;
+		head -> prev = tail -> prev;
+		tail -> next -> prev = head;
+		tail -> prev -> next = head;
+		tail -> next = tail -> prev = nullptr;
+
+		//TODO : đổi tail với temp
+		tail -> next = temp -> next;
+		tail -> prev = temp -> prev;
+		temp -> next -> prev = tail;
+		temp -> prev -> next = tail;
+		temp -> next = temp -> prev = nullptr;
+
+		delete temp;
 	}	
 
 
@@ -228,6 +287,17 @@ void imp_res::RED(string name, int energy)
 	else
 	{
 		//TODO : code you
+		customer* temp = customerX;
+		for(int i = 0; i < sizeCustomerInDesk; i++){
+			if(temp -> name == name) return;
+			temp = temp -> next;
+		}
+		temp = customerQueue;
+		for(int i = 0; i < sizeCustomerQueue; i++){
+			if(temp -> name == name) return;
+			temp = temp -> next;
+		}
+		
 	}
 
 	//* Bước 4 đưa vào hàng chờ 
@@ -239,11 +309,19 @@ void imp_res::RED(string name, int energy)
 		if(sizeCustomerQueue == 0)
 		{
 			//TODO: gán node thành danh sách liên kết đôi vong Queue
+			customerQueue = newCustomer;
+			customerQueue -> next = customerQueue -> prev = customerQueue;
 		}
 		//^ Chỉnh chèn cuối danh sách liên kết đôi vòng vị trí hiện tại CustomerQueue là đầu danh sách
 		else
 		{
 			//TODO: này là danh sách vòng đôi tail = Queue->prev, thêm cuối cập nhật  Queue->prev, tail->next, giống cái chèn sau của bước 7
+			customer* tail = customerQueue -> prev;
+			newCustomer -> prev = tail;
+			newCustomer -> next = tail -> next;
+			tail -> next -> prev = newCustomer;
+			tail -> next = newCustomer;
+
 		}
 		sizeCustomerQueue ++;
 
@@ -263,7 +341,11 @@ void imp_res::RED(string name, int energy)
 	else if(sizeCustomerInDesk == 0)
 	{
 		//TODO : code you
-
+		customer * newCustomer = new customer(name,energy,nullptr,nullptr);
+		customerX = newCustomer;
+		customerX -> next = customerX;
+		customerX -> prev = customerX;
+		sizeCustomerInDesk++;
 		//^ chỉnh biến quản lý thời gian khách hàng nào đến trước
 		//^ vì đang trong bàn ăn nên inDisk = true
 		CustomerTimeTail = CustomerTimeHead = new customerTime (customerX, true);
@@ -276,6 +358,18 @@ void imp_res::RED(string name, int energy)
 	if(sizeCustomerInDesk >= MAXSIZE / 2)
 	{
 		//TODO : code you
+		customer* temp; 
+		temp = customerX;
+		int max = 0;
+		for(int i = 0; i < sizeCustomerInDesk; i++)
+		{
+			int RES = abs(energy - temp -> energy);
+			if(max < RES){
+			max = RES;
+			customerX = temp;
+			}
+			temp = temp -> next;
+		}
 	}
 
 	customer* newCustomer = new customer (name, energy, nullptr, nullptr); //! khách hàng mới
@@ -283,11 +377,19 @@ void imp_res::RED(string name, int energy)
 	if(energy >= customerX->energy)
 	{
 		//TODO : code you
+		newCustomer -> prev = customerX;
+		newCustomer -> next = customerX -> next;
+		customerX -> next -> prev = newCustomer;
+		customerX -> next = newCustomer;
 	}
 	//* Bước 7 trương hợp chèn ngược chiều kim đồng hồ
 	else
 	{
 		//TODO : code you
+		newCustomer -> next = customerX;
+		newCustomer -> prev = customerX -> prev;
+		customerX -> prev -> next = newCustomer;
+		customerX -> prev = newCustomer;
 	}
 
 	customerX = newCustomer;
@@ -315,11 +417,12 @@ void imp_res::BLUE(int num)
 		customerTime* customerTimeDelete = this->findCustomerDelete();
 
 		//* Bước 1.2 đuổi khách 
-		this->delteCustomerTime(customerTimeDelete);
+		this->deleteCustomerTime(customerTimeDelete);
 	}
 
 	//* Bước 2 xử lý đưa khách hàng từ hàng chờ vào bàn ăn
 	this->insertCustomerQueueToInDisk();
+	return;
 }
 
 void imp_res::PURPLE()
@@ -336,6 +439,19 @@ void imp_res::DOMAIN_EXPANSION()
 		int total_Wizard = 0; //! Tổng thuật sư
 		int total_Spirit = 0; //! Tổng oán linh
 		//TODO : Code you
+		customer* temp = customerX;
+		for(int i = 0; i < sizeCustomerInDesk; i++){
+			if(temp -> energy > 0) total_Wizard += temp -> energy;
+			else total_Spirit += temp -> energy;
+			temp = temp -> next;
+		}
+
+		temp = customerQueue;
+		for(int i = 0; i < sizeCustomerQueue; i++){
+			if(temp -> energy > 0) total_Wizard += temp -> energy;
+			else total_Spirit += temp -> energy;
+			temp = temp -> next;
+		}
 
 	//* Bước 2 đuổi khách xem thử đuổi bên nào và print ra luôn đuổi trong hàng bàng
 		customerTime* WizardTail = nullptr; //! Thuật sư lưu danh sách các thuật sư
@@ -353,10 +469,14 @@ void imp_res::DOMAIN_EXPANSION()
 				if(WizardHead == nullptr)
 				{
 					//TODO cập nhật danh sách liên kết đôi ban đầu chưa có phần tử nào
+					WizardHead = WizardTail = tempTime;
 				}
 				else
 				{
-					//TODO cập nhật danh sách liên kết đôi Wizard tail thêm node của cuối danh sách đôi thôi
+					//TODO cập nhật danh sách liên kết đôi Wizard tail thêm node của cuối danh sách đôi thôi	
+					WizardTail -> next = tempTime;
+					tempTime -> prev = WizardTail;
+					WizardTail = tempTime;
 				}
 			}
 			//TODO oán linh
@@ -365,10 +485,12 @@ void imp_res::DOMAIN_EXPANSION()
 				if(SpiritHead == nullptr)
 				{
 					//TODO cập nhật danh sách liên kết đôi ban đầu chưa có phần tử nào
+					
 				}
 				else
 				{
 					//TODO cập nhật danh sách liên kết đôi Wizard tail thêm node của cuối danh sách đôi thôi
+					
 				}
 			}
 
@@ -380,6 +502,9 @@ void imp_res::DOMAIN_EXPANSION()
 		if(SpiritHead != nullptr) SpiritHead->prev = SpiritTail->next = nullptr;
 		if(WizardHead != nullptr) WizardHead->prev = WizardTail->next = nullptr;
 		
+		print_reverse(WizardHead);
+		return;
+
 		//* Bước 2.2 xóa danh sách oán linh trong bàn ăn 
 		if(abs(total_Spirit) <= total_Wizard)
 		{
@@ -388,15 +513,16 @@ void imp_res::DOMAIN_EXPANSION()
 			{
 				customerTime* customerTimeDelete;
 				//TODO xác định khách chuẩn bị đuổi SpiritHead, cập nhật WizardHead
+				//customerTimeDelete = SpiritHead;
 				
-
 				//* Bước 1.2 đuổi khách 
-				this->delteCustomerTime(customerTimeDelete);
+				this->deleteCustomerTime(customerTimeDelete);
 			}
 
 			//* cập nhật CustomerTimeHead và CustomerTimeTail
 			CustomerTimeHead = WizardHead;
 			CustomerTimeTail = WizardTail;
+			
 		}
 		//* Bước 2.2 xóa danh sách Thuật sư  trong bàn ăn 
 		else{
@@ -405,9 +531,13 @@ void imp_res::DOMAIN_EXPANSION()
 			{
 				customerTime* customerTimeDelete;
 				//TODO xác định khách chuẩn bị đuổi WizardHead, cập nhật WizardHead
+				customerTimeDelete = WizardHead;
+				WizardHead = WizardHead -> next;
+				customerTimeDelete -> next -> prev = nullptr;
+				customerTimeDelete -> next = nullptr;
 
 				//* Bước 1.2 đuổi khách 
-				this->delteCustomerTime(customerTimeDelete);
+				this->deleteCustomerTime(customerTimeDelete);
 			}
 
 			//* cập nhật CustomerTimeHead và CustomerTimeTail
@@ -431,7 +561,37 @@ void imp_res::UNLIMITED_VOID()
 
 void imp_res::LIGHT(int num)
 {
-	//TODO CODE YOU
+	//* print hàng chờ customerQueue
+	if(num == 0 && sizeCustomerQueue != 0)
+	{
+	//TODO: dùng vòng lặp for dựa trên sizeCustomerQueue sử dụng hàm print trong class custome
+		customer* temp = customerQueue;
+		for(int i = 0; i < sizeCustomerQueue; i++){
+		temp -> print();
+		temp = temp -> next;
+		}
+
+	}
+	//* print hàng trong bàn customerX theo chiều kim đồng hồ
+	else if (num > 0)
+	{	
+	//TODO: dùng vòng lặp for dựa trên sizeCustomerInDesk và next sử dụng hàm print trong class custome
+	customer* temp = customerX;
+	for(int i = 0; i < sizeCustomerInDesk; i++){
+		temp -> print();
+		temp = temp -> next;
+	}
+	}
+	//* print hàng trong bàn customerX ngược chiều kim đồng hồ
+	else if (num < 0)
+	{
+	//TODO: dùng vòng lặp for dựa trên sizeCustomerInDesk và prev sử dụng hàm print trong class custome
+		customer* temp = customerX;
+		for(int i = 0; i< sizeCustomerInDesk; i++){
+		temp -> print();
+		temp = temp -> prev;
+		}
+	}
 }
 
 
