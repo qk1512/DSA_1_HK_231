@@ -118,6 +118,7 @@ private:
 		}
 
 		delete customerTimeDelete; //! né thằng này ra :< chỉnh nó là mệt chuyện
+		COUNTDELETE++;
 	}
 
 	//! đưa khách hàng từ hàng chờ vào bàn ăn
@@ -260,6 +261,7 @@ public:
 			customerTime* temp = CustomerTimeHead;	 
 			CustomerTimeHead = CustomerTimeHead->next;
 			delete temp;
+			COUNTDELETE++;
 		}
 	}
 private:
@@ -273,7 +275,7 @@ private:
 	public:
 		customerTime(customer * data, bool inDisk, customerTime* next = nullptr, customerTime* prev = nullptr)
 		:data(data),next(next),prev(prev), inDisk(inDisk) {}
-		~customerTime(){delete data;}
+		~customerTime(){delete data; COUNTDELETE++;}
 	};
 };
 
@@ -306,6 +308,7 @@ void imp_res::RED(string name, int energy)
 	{
 		//^ Chỉnh chèn đầu danh sách liên kết đôi vòng khi không có phần tử nào
 		customer* newCustomer = new customer(name, energy, nullptr, nullptr);
+		COUNTDELETE--;
 		if(sizeCustomerQueue == 0)
 		{
 			//TODO: gán node thành danh sách liên kết đôi vong Queue
@@ -330,6 +333,7 @@ void imp_res::RED(string name, int energy)
 		//^ vì đang trong bàn ăn nên inDisk = false
 		//^ này code của anh khuyến khích bạn code khách đi nha
 		customerTime* newCustomerTime = new customerTime (newCustomer, false);
+		COUNTDELETE--;
 		CustomerTimeTail->next = newCustomerTime;
 		newCustomerTime->prev = CustomerTimeTail;
 		CustomerTimeTail = CustomerTimeTail->next;
@@ -342,6 +346,7 @@ void imp_res::RED(string name, int energy)
 	{
 		//TODO : code you
 		customer * newCustomer = new customer(name,energy,nullptr,nullptr);
+		COUNTDELETE--;
 		customerX = newCustomer;
 		customerX -> next = customerX;
 		customerX -> prev = customerX;
@@ -349,6 +354,7 @@ void imp_res::RED(string name, int energy)
 		//^ chỉnh biến quản lý thời gian khách hàng nào đến trước
 		//^ vì đang trong bàn ăn nên inDisk = true
 		CustomerTimeTail = CustomerTimeHead = new customerTime (customerX, true);
+		COUNTDELETE--;
 		return;
 	}
 
@@ -373,6 +379,7 @@ void imp_res::RED(string name, int energy)
 	}
 
 	customer* newCustomer = new customer (name, energy, nullptr, nullptr); //! khách hàng mới
+	COUNTDELETE--;
 	//* Bước 7 trường hợp chèn theo chiều kim đồng hồ
 	if(energy >= customerX->energy)
 	{
@@ -399,6 +406,7 @@ void imp_res::RED(string name, int energy)
 	//^ vì đang trong bàn ăn nên inDisk = true
 	//^ này code của anh khuyến khích bạn code khách đi nha
 	customerTime* newCustomerTime = new customerTime (newCustomer, true);
+	COUNTDELETE--;
 	CustomerTimeTail->next = newCustomerTime;
 	newCustomerTime->prev = CustomerTimeTail;
 	CustomerTimeTail = CustomerTimeTail->next;
@@ -459,51 +467,56 @@ void imp_res::DOMAIN_EXPANSION()
 		customerTime* WizardHead = nullptr; //! node đầu của thuật sư
 		customerTime* SpiritHead = nullptr; //! node đầu của oán linh
 		//* Bước 2.1 tách làm 2 danh sách oán linh và thuật sư
-		customerTime* tempTime = CustomerTimeHead;
-		for(int i = 0; i < sizeCustomerInDesk + sizeCustomerQueue; i++)
+		customerTime* tempTime = CustomerTimeHead;		
+		for(int i = 0; i < sizeCustomerInDesk + sizeCustomerQueue;i++)
 		{
 			//TODO thuật sư
 			if(tempTime->data->energy > 0)
 			{
-				
 				if(WizardHead == nullptr)
 				{
 					//TODO cập nhật danh sách liên kết đôi ban đầu chưa có phần tử nào
-					WizardHead = WizardTail = tempTime;
+					WizardHead = WizardTail = tempTime;	
 				}
 				else
 				{
 					//TODO cập nhật danh sách liên kết đôi Wizard tail thêm node của cuối danh sách đôi thôi	
 					WizardTail -> next = tempTime;
-					tempTime -> prev = WizardTail;
-					WizardTail = tempTime;
+					WizardTail -> next -> prev = WizardTail;
+					WizardTail = tempTime;					
 				}
 			}
 			//TODO oán linh
-			else
+			else 
 			{
 				if(SpiritHead == nullptr)
 				{
 					//TODO cập nhật danh sách liên kết đôi ban đầu chưa có phần tử nào
-					
+					SpiritHead = SpiritTail = tempTime;
 				}
 				else
 				{
 					//TODO cập nhật danh sách liên kết đôi Wizard tail thêm node của cuối danh sách đôi thôi
-					
+					SpiritTail -> next = tempTime;
+					SpiritTail -> next -> prev = SpiritTail;
+					SpiritTail = tempTime;	
 				}
 			}
-
+			
 			tempTime = tempTime->next;
 		}
-
+		
 
 		//! cập nhật TimeHead, TimeTail
-		if(SpiritHead != nullptr) SpiritHead->prev = SpiritTail->next = nullptr;
-		if(WizardHead != nullptr) WizardHead->prev = WizardTail->next = nullptr;
+		if(SpiritHead != nullptr && SpiritTail != nullptr) {
+			SpiritHead -> prev = nullptr;
+			SpiritTail -> next = nullptr;
+		}
+		if(WizardHead != nullptr && WizardTail != nullptr) {
+			WizardHead -> prev = nullptr;
+			WizardTail -> next = nullptr;
+		}
 		
-		print_reverse(WizardHead);
-		return;
 
 		//* Bước 2.2 xóa danh sách oán linh trong bàn ăn 
 		if(abs(total_Spirit) <= total_Wizard)
@@ -513,7 +526,8 @@ void imp_res::DOMAIN_EXPANSION()
 			{
 				customerTime* customerTimeDelete;
 				//TODO xác định khách chuẩn bị đuổi SpiritHead, cập nhật WizardHead
-				//customerTimeDelete = SpiritHead;
+				customerTimeDelete = SpiritHead;
+				SpiritHead = SpiritHead -> next;
 				
 				//* Bước 1.2 đuổi khách 
 				this->deleteCustomerTime(customerTimeDelete);
@@ -533,9 +547,6 @@ void imp_res::DOMAIN_EXPANSION()
 				//TODO xác định khách chuẩn bị đuổi WizardHead, cập nhật WizardHead
 				customerTimeDelete = WizardHead;
 				WizardHead = WizardHead -> next;
-				customerTimeDelete -> next -> prev = nullptr;
-				customerTimeDelete -> next = nullptr;
-
 				//* Bước 1.2 đuổi khách 
 				this->deleteCustomerTime(customerTimeDelete);
 			}
@@ -551,12 +562,203 @@ void imp_res::DOMAIN_EXPANSION()
 
 void imp_res::REVERSAL()
 {
-	//TODO CODE YOU	
+	//* Không có khách mà đảo gì, 1 khách sao đảo :<
+	if(sizeCustomerInDesk <= 1) return;			
+
+	//^ hàm blue, DOMAIN_EXPANSION thiết kê thêm class làm khá dễ nhưng phần này nhược điểm :<
+
+	customer* head = nullptr; 
+	customer* tail = nullptr;
+
+	//* Đảo oán linh trước đi 
+
+	//* Bước 1 tìm head và tail
+	//* : tìm head bằng cách duyệt theo ngược chiều kim đồng hồ từ khách hàng X tìm oán linh
+	head = customerX;
+	for(int i = 0; i < sizeCustomerInDesk; i++)
+	{
+		//Todo: tìm head
+		if(head -> energy < 0) break;
+		head = head -> prev;
+	}
+
+	//* : tìm tail bằng cách duyệt theo chiều kim đồng hồ từ khách hàng trước X tìm oán linh
+	tail = customerX->next; //! NHƯNG PHẢI KHÁC khách hàng x duyệt lần đầu
+	for(int i = 0; i < sizeCustomerInDesk; i++)
+	{
+		//Todo: tìm tail
+		if(tail -> energy < 0) break;
+		tail = tail -> next;
+	}
+			
+	//! chỉ có 2 khách hàng là oán linh trở lên mới đảo
+	if(head->energy < 0 && head != tail){
+
+	//* Bước 2 hoán đổi không thể nào hoán đổi name được vì CustomerTime đang giữ con trỏ
+	//* nên phải hoán đổi luôn địa chỉ bằng hàm swap
+	for(int i = 0; i < sizeCustomerInDesk / 2; i++)
+	{
+		this->swap(head, tail); //! đổi giá trị bên trong con trỏ
+
+		//TODO swap HEAD VÀ TAIL
+		customer* temp = head;
+		head = tail;
+		tail = temp;
+					
+		//TODO : tìm head tiếp theo
+		head = head->prev;
+		for(int i = 0; i < sizeCustomerInDesk; i++)
+		{
+			//Todo: tìm head
+			if(head -> energy < 0) break;
+			head = head -> prev;
+
+		}
+
+		//! đổi xong rồi nếu TH chẵn
+
+		if(head == tail) break;		
+
+		//TODO : tìm tail tiếp theo
+
+		tail = tail->next;
+		for(int i = 0; i < sizeCustomerInDesk ; i++)
+		{
+			//Todo: tìm tail
+			if(tail -> energy < 0) break;
+			tail = tail -> next;
+		}	
+			//! đổi xong rồi nếu TH lẽ
+			if(head == tail) break;	
+		}
+	}
+			
+	//* Đảo thuật sư giống trên thôi
+	//* Bước 1 tìm head và tail
+	//* : tìm head bằng cách duyệt theo ngược chiều kim đồng hồ từ khách hàng X tìm oán linh
+		head = customerX;
+		for(int i = 0; i < sizeCustomerInDesk; i++)
+		{
+			//Todo: tìm head
+			if(head -> energy > 0) break;
+			head = head -> prev;
+		}
+
+			
+		//* : tìm tail bằng cách duyệt theo chiều kim đồng hồ từ khách hàng trước X tìm oán linh
+		tail = customerX->next; //! NHƯNG PHẢI KHÁC khách hàng x duyệt lần đầu
+		for(int i = 0; i < sizeCustomerInDesk; i++)
+		{
+			//Todo: tìm tail
+			if(tail -> energy > 0) break;
+			tail = tail -> next;
+		}
+			
+		//! chỉ có 2 khách hàng là oán linh trở lên mới đảo
+		if(head->energy > 0 && head != tail){
+
+			//* Bước 2 hoán đổi không thể nào hoán đổi name được vì CustomerTime đang giữ con trỏ
+			//* nên phải hoán đổi luôn địa chỉ bằng hàm swap
+			for(int i = 0; i < sizeCustomerInDesk / 2; i++)
+			{
+				this->swap(head, tail); //! đổi giá trị bên trong con trỏ
+				//TODO swap HEAD VÀ TAIL
+				customer* temp = head;
+				head = tail;
+				tail = temp;
+
+				//TODO : tìm head tiếp theo
+				head = head->prev;
+				for(int i = 0; i < sizeCustomerInDesk; i++)
+				{
+					//Todo: tìm head
+					if(head -> energy > 0) break;
+					head = head -> prev;
+					}
+					
+
+					//! đổi xong rồi nếu TH chẵn
+					if(head == tail) break;		
+
+					//TODO : tìm tail tiếp theo
+					tail = tail->next;
+					for(int i = 0; i < sizeCustomerInDesk ; i++)
+					{
+						//Todo: tìm tail
+						if(tail -> energy > 0) break;
+						tail = tail -> next;
+
+					}	
+			
+					//! đổi xong rồi nếu TH lẽ
+					if(head == tail) break;	
+		}
+	}
+	return;
 }
 
 void imp_res::UNLIMITED_VOID()
 {
 	//TODO CODE YOU
+	if(sizeCustomerInDesk <= 3) return;
+
+	int MIN_TOTAL = 2147483647; //! đáp án
+	customer* head = nullptr, * tail = nullptr; //! node đầu cuối dãy nhỏ nhất
+
+	//* Bước 1 ý tưởng cho i j chạy theo hình tròn tìm min nhỏ nhất và xa khách hàng x nhất
+	customer* tempi = customerX; //! khách hàng i
+	for(int i = 0; i < sizeCustomerInDesk; i++)
+	{
+		int TOTAL = 0;  //! tổng từ chạy i -> i + sizeCustomerInDesk
+		customer* tempj = tempi; //! khách hàng j
+		int count_node = 0;
+		for(int j = 0; j < sizeCustomerInDesk; j++)
+		{
+		//TODO: tính tổng TOTAL, cập nhật head và tail khi số khách > 4 và TOTAL nhỏ bằng min
+			count_node++;
+			TOTAL += tempj -> energy;
+		
+			if(MIN_TOTAL >= TOTAL && count_node >= 4){
+				MIN_TOTAL = TOTAL;
+				head = tempi;
+				tail = tempj;
+			}
+			tempj = tempj->next;
+		}
+		tempi = tempi -> next;
+	}	
+	//* Bước 2: print
+	//TODO: print ra khách hàng từ min -> tail và head->min
+
+	customer* min = head;
+	customer* temp = head->next; //! vì duyệt qua next nên sizeHeadToTail = sizeHeadToMin = 1
+	int sizeHeadToMin = 1, sizeHeadToTail = 1;
+	//* tìm min energy đầu tiên, tính sizeHeadToMin và sizeHeadToTail
+	while(temp != tail->next)
+	{
+		//TODO: cập nhật min, sizeHeadToTail, sizeHeadToMin
+		if(temp -> energy < min -> energy) min = temp;
+			temp = temp->next;
+			sizeHeadToTail++;
+		}
+		temp = head -> next;
+		while(temp != min -> next){
+			temp = temp -> next;
+			sizeHeadToMin++;
+		}
+		//* print từ min -> tail bao gồm min và tail
+		for(int i = 0; i <= sizeHeadToTail - sizeHeadToMin; i++)
+		{	
+			min -> print();
+			min = min -> next;
+		}
+			
+		//* print từ head -> min không bao gồm min
+		for(int i = 0; i < sizeHeadToMin - 1; i++)
+		{
+			head -> print();
+			head = head -> next;
+		}
 }
 
 void imp_res::LIGHT(int num)
